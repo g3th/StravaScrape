@@ -1,0 +1,6 @@
+Included chromedriver version is for Chrome 102. 
+Downgrade accordingly, or dowload chromedriver for your current version here:
+
+https://chromedriver.storage.googleapis.com/index.html
+
+and copy it into this folder, or downgrade your version of chrome to version 102.
