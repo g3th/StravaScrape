@@ -5,6 +5,7 @@ import os
 
 class UserInterface:
     def __init__(self):
+        self.colors = ['166', '202']
         self.activities_are_present = False
         self.menu_options = ['1','2','3','4','5']
         self.operations = BrowserOperations()
@@ -22,14 +23,15 @@ class UserInterface:
             pass
 
     def title(self):
+        counter = 0
+        title = open("assets/art.txt").readlines()
         print("\x1bc")
-        print("\033[38;05;166m███████╗████████╗██████╗  █████╗ ██╗   ██╗ █████╗       ███████╗ ██████╗██████╗  █████╗ ██████╗ ███████╗")
-        print("\033[38;05;172m██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██║   ██║██╔══██╗      ██╔════╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝")
-        print("\033[38;05;202m███████╗   ██║   ██████╔╝███████║██║   ██║███████║█████╗███████╗██║     ██████╔╝███████║██████╔╝█████╗")
-        print("\033[38;05;208m╚════██║   ██║   ██╔══██╗██╔══██║╚██╗ ██╔╝██╔══██║╚════╝╚════██║██║     ██╔══██╗██╔══██║██╔═══╝ ██╔══╝")
-        print("\033[38;05;166m███████║   ██║   ██║  ██║██║  ██║ ╚████╔╝ ██║  ██║      ███████║╚██████╗██║  ██║██║  ██║██║     ███████╗")
-        print("\033[38;05;172m╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝  ╚═══╝  ╚═╝  ╚═╝      ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚══════╝")
-        print("---------------------------------------- by Roberto Toledo (github.com/g3th) ----------------------------------------")
+        for i in title:
+            if counter > len(self.colors) - 1:
+                counter = 0
+            print("\033[38;05;{}m".format(self.colors[counter]) + i, end='')
+            counter += 1
+        print()
 
     def checks(self):
         for i in os.listdir("login_data"):
@@ -104,7 +106,32 @@ class UserInterface:
                     print("Invalid Option")
                     input("Press Enter")
 
+    def sub_menu(self):
+        self.title()
+        counter = 1
+        activities = []
+        for i in os.listdir("data"):
+            if "page" in i:
+                pass
+            else:
+                activities.append(i)
+        print("\n{} Year/s of activity/activities in total:\n".format(len(activities)))
+        for i in activities:
+            total_activity_links = open("data/{}".format(i)).readlines()
+            print("[{}] Year {} Has {} Activity/Activities".format(counter, counter, len(total_activity_links)))
+            counter += 1
+        chosen_year = int(input("\nPick an Option: "))
+        self.title()
+        chosen_activity_year = open("data/{}".format(activities[chosen_year - 1])).readlines()
+        print("Populating List:")
+        counter = 1
+        for i in chosen_activity_year:
+            print("[{}] {}".format(counter, self.operations.fetch_interval_value(self.headless_flag, i)))
+            counter += 1
+        exit()
+
     #Login
+
     def option_one(self):
         while True:
             self.title()
@@ -121,8 +148,8 @@ class UserInterface:
                 print("Passwords don't match.")
                 print("Press Enter")
                 input()
-
     # Set Headless Mode
+
     def option_two(self):
         if self.headless_flag == "off":
             self.headless_flag = "on"
@@ -136,8 +163,8 @@ class UserInterface:
         self.menu_options = ['1', '2', '3', '4', '5', '6']
         print("Done. Press Enter")
         input()
-
     # User Strava Page
+
     def option_four(self):
         self.title()
         user_page = input("Enter your athlete url: ")
@@ -145,8 +172,3 @@ class UserInterface:
             page.write(user_page)
         page.close()
         self.athlete_page = "Athlete Page Stored"
-
-    def sub_menu(self):
-        self.title()
-        print("Sub Menu")
-        input()

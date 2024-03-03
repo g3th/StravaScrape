@@ -148,5 +148,17 @@ class BrowserOperations:
                 time.sleep(0.4)
                 self.page_source('ul', {'class': 'options'}, "data/page_html")
 
-
+    def fetch_interval_value(self, headless, page):
+        if headless == 'on':
+            self.browser = webdriver.Chrome(service=self.browser_service, options=self.browser_options)
+        else:
+            self.browser = webdriver.Chrome(service=self.browser_service)
+        self.browser.get(page)
+        time.sleep(0.8)
+        self.load_cookies(False, False)
+        time.sleep(0.8)
+        raw = self.browser.page_source
+        parse = soup(raw, 'html.parser')
+        find = parse.find_all('h2', attrs={'id':'interval-value'})
+        return find[0].text
 
