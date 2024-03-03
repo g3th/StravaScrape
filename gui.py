@@ -31,8 +31,11 @@ class UserInterface:
                 counter = 0
             print("\033[38;05;{}m".format(self.colors[counter]) + i, end='')
             counter += 1
+        chromedriver_note = open('Chromedriver/note').readlines()
         print()
-
+        for i in chromedriver_note:
+            print(i)
+        print()
     def checks(self):
         for i in os.listdir("login_data"):
             if i == "athlete_page":
