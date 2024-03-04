@@ -7,7 +7,7 @@ class UserInterface:
     def __init__(self):
         self.colors = ['166', '202']
         self.activities_are_present = False
-        self.menu_options = ['1','2','3','4','5']
+        self.menu_options = ['1', '2', '3', '4', '5']
         self.operations = BrowserOperations()
         self.headless_flag = 'on'
         self.logged_in = 'Store Credentials'
@@ -36,6 +36,7 @@ class UserInterface:
         for i in chromedriver_note:
             print(i, end='')
         print()
+
     def checks(self):
         for i in os.listdir("login_data"):
             if i == "athlete_page":
@@ -50,7 +51,7 @@ class UserInterface:
             if [item for item in os.listdir("data") if ("activities" in item)]:
                 self.activities_are_present = True
                 self.menu_options = ['1', '2', '3', '4', '5', '6']
-            print("[{}] {}".format(self.menu_options[0],self.logged_in))
+            print("[{}] {}".format(self.menu_options[0], self.logged_in))
             print("[{}] Use Headless mode [{}]".format(self.menu_options[1], self.headless_flag))
             print("[{}] Get Activity Links".format(self.menu_options[2]))
             print("[{}] {}".format(self.menu_options[3], self.athlete_page))
@@ -113,8 +114,9 @@ class UserInterface:
         self.title()
         counter = 1
         activities = []
+        skip_files = ['page', 'week_intervals']
         for i in os.listdir("data"):
-            if "page" in i:
+            if "page" in i or "week" in i:
                 pass
             else:
                 activities.append(i)
@@ -126,15 +128,33 @@ class UserInterface:
         chosen_year = int(input("\nPick an Option: "))
         self.title()
         chosen_activity_year = open("data/{}".format(activities[chosen_year - 1])).readlines()
-        print("Populating List:")
+
         counter = 1
-        for i in chosen_activity_year:
-            print("[{}] {}".format(counter, self.operations.fetch_interval_value(self.headless_flag, i)))
-            counter += 1
-        exit()
+        week_intervals = []
+        for j in os.listdir("data"):
+            if "week_intervals" in j:
+                print("Weekly activities stored for the following dates:")
+                intervals = open("data/week_intervals").readlines()
+                for k in intervals:
+                    print("[{}] {}".format(counter, k, end=''))
+                    counter += 1
+                input("Press Enter")
+                break
+            else:
+                print("Populating List:")
+                for i in chosen_activity_year:
+                    date = self.operations.fetch_interval_value(self.headless_flag, i)
+                    print("[{}] {}".format(counter, date.strip()))
+                    week_intervals.append(date.strip())
+                    counter += 1
+                with open("data/week_intervals{}", 'w') as intervals:
+                    for i in week_intervals:
+                        intervals.write("{}\n".format(i))
+                print("Activities were stored.")
+                input("Press Enter")
+                break
 
-    #Login
-
+    # Login
     def option_one(self):
         while True:
             self.title()
@@ -151,6 +171,7 @@ class UserInterface:
                 print("Passwords don't match.")
                 print("Press Enter")
                 input()
+
     # Set Headless Mode
 
     def option_two(self):
@@ -166,6 +187,7 @@ class UserInterface:
         self.menu_options = ['1', '2', '3', '4', '5', '6']
         print("Done. Press Enter")
         input()
+
     # User Strava Page
 
     def option_four(self):
