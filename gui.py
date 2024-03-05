@@ -7,7 +7,7 @@ class UserInterface:
     def __init__(self):
         self.colors = ['166', '202']
         self.activities_are_present = False
-        self.menu_options = ['1', '2', '3', '4', '5']
+        self.menu_options = ['1', '2', '3', '4', '5', '6']
         self.operations = BrowserOperations()
         self.headless_flag = 'on'
         self.logged_in = 'Store Credentials'
@@ -55,11 +55,8 @@ class UserInterface:
             print("[{}] Use Headless mode [{}]".format(self.menu_options[1], self.headless_flag))
             print("[{}] Get Activity Links".format(self.menu_options[2]))
             print("[{}] {}".format(self.menu_options[3], self.athlete_page))
-            if len(self.menu_options) == 6:
-                print("[{}] Enter Activity Sub Menu".format(self.menu_options[4], self.athlete_page))
-                print("[{}] Quit".format(self.menu_options[5]))
-            else:
-                print("[{}] Quit".format(self.menu_options[4]))
+            print("[{}] Enter Activity Sub Menu".format(self.menu_options[4], self.athlete_page))
+            print("[{}] Quit".format(self.menu_options[5]))
             self.opt = input("\nPick an Option: ")
             match self.opt:
                 case "1":
@@ -94,18 +91,14 @@ class UserInterface:
                     else:
                         self.option_four()
                 case "5":
-                    if len(self.menu_options) == 6:
+                    if [file for file in os.listdir("data") if ("activities" in file)]:
                         self.sub_menu()
                     else:
-                        print("Goodbye")
-                        exit()
+                        print("Scrape some activities first.")
+                        input("Press Enter.")
                 case "6":
-                    if len(self.menu_options) == 6:
-                        print("Goodbye")
-                        exit()
-                    else:
-                        print("Invalid Option")
-                        input("Press Enter")
+                    print("Goodbye")
+                    exit()
                 case _:
                     print("Invalid Option")
                     input("Press Enter")
@@ -114,9 +107,9 @@ class UserInterface:
         self.title()
         counter = 1
         activities = []
-        skip_files = ['page', 'week_intervals']
-        for i in os.listdir("data"):
-            if "page" in i or "week" in i:
+        files = [file for file in os.listdir("data") if os.path.isfile("data/" + file)]
+        for i in files:
+            if "page" in i:
                 pass
             else:
                 activities.append(i)
@@ -125,34 +118,66 @@ class UserInterface:
             total_activity_links = open("data/{}".format(i)).readlines()
             print("[{}] Year {} Has {} Activity/Activities".format(counter, counter, len(total_activity_links)))
             counter += 1
-        chosen_year = int(input("\nPick an Option: "))
+        user_option = int(input("\nPick an Option: "))
+        chosen_year = user_option - 1
         self.title()
-        chosen_activity_year = open("data/{}".format(activities[chosen_year - 1])).readlines()
-
+        chosen_activity_year = open("data/activities_{}".format(chosen_year)).readlines()
         counter = 1
-        week_intervals = []
-        for j in os.listdir("data"):
-            if "week_intervals" in j:
-                print("Weekly activities stored for the following dates:")
-                intervals = open("data/week_intervals").readlines()
-                for k in intervals:
-                    print("[{}] {}".format(counter, k, end=''))
+        files = [file for file in os.listdir("data") if os.path.isdir("data/" + file) and "Activities" in file]
+        print("Found Activities for the following date ranges (not in order):\n")
+        dates = []
+        activity_links = []
+        if files:
+            for i in files:
+                print("[{}] {}".format(counter, i))
+                dates.append(i)
+            opt = int(input("\nPick a date range: "))
+            date_range_choice = opt - 1
+            with open("data/{}/week_activities_links".format(dates[date_range_choice])) as a_links:
+                for j in a_links.readlines():
+                    activity_links.append(j.strip())
+            self.title()
+            date_only = dates[date_range_choice].split("for ")[1]
+            print("The following activities are available for date range: {}\n".format(date_only))
+            counter = 1
+            for i in activity_links:
+                print("[{}] {}".format(counter, i.split(" | ")[1]))
+                counter += 1
+            opt = int(input("\nPick an activity: "))
+            activity_choice = opt - 1
+            self.title()
+            activity_title = activity_links[activity_choice].split(" | ")[1]
+            link = activity_links[activity_choice].split(" | ")[0]
+            print("Scraping Metrics for activity '{}'".format(activity_title))
+            splits= self.operations.activity_data_scraper(self.headless_flag, "https://" + link)
+            print("Metrics saved in file titled: {}".format(activity_title))
+            # save file context manager
+            with open("data/{}/{}".format(dates[date_range_choice], activity_title), 'w') as metrics:
+                for i in splits:
+                    metrics.write(str(i + "\n"))
+            metrics.close()
+            input("Press Enter to Return")
+        else:
+            date = None
+            week_links = []
+            activity_titles = []
+            print("Populating List:")
+            for i in chosen_activity_year:
+                date, links, titles = self.operations.fetch_interval_value(self.headless_flag, i)
+                print("[{}] {}".format(counter, date))
+                os.makedirs("data/{}".format(date), exist_ok=True)
+                for j in range(len(links)):
+                    week_links.append(links[j - 1])
+                    activity_titles.append(titles[j - 1])
                     counter += 1
-                input("Press Enter")
-                break
-            else:
-                print("Populating List:")
-                for i in chosen_activity_year:
-                    date = self.operations.fetch_interval_value(self.headless_flag, i)
-                    print("[{}] {}".format(counter, date.strip()))
-                    week_intervals.append(date.strip())
-                    counter += 1
-                with open("data/week_intervals{}", 'w') as intervals:
-                    for i in week_intervals:
-                        intervals.write("{}\n".format(i))
-                print("Activities were stored.")
-                input("Press Enter")
-                break
+            with open("data/{}/week_activities_links".format(date), 'w') as w_links:
+                for i in range(len(week_links)):
+                    # Split by Pipe.
+                    # One case could be that user starts activity with "|", and 'split' returns wrong date (above).
+                    # This is improbable, but still possible.
+                    w_links.write("www.strava.com{} | {}\n".format(week_links[i], activity_titles[i]))
+            print("\n\nData was stored.")
+            input("Press Enter")
 
     # Login
     def option_one(self):
@@ -184,7 +209,6 @@ class UserInterface:
         self.title()
         print("Scraping Pages... Hands off...")
         self.operations.check_elements(self.headless_flag)
-        self.menu_options = ['1', '2', '3', '4', '5', '6']
         print("Done. Press Enter")
         input()
 
@@ -197,3 +221,6 @@ class UserInterface:
             page.write(user_page)
         page.close()
         self.athlete_page = "Athlete Page Stored"
+
+    def activity_data_menu(self):
+        print("1) Heart Rate")

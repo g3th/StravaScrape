@@ -159,6 +159,42 @@ class BrowserOperations:
         time.sleep(0.8)
         raw = self.browser.page_source
         parse = soup(raw, 'html.parser')
-        find = parse.find_all('h2', attrs={'id':'interval-value'})
-        return find[0].text
+        links = []
+        titles = []
+        date = parse.find_all('h2', attrs={'id':'interval-value'})
+        unparsed_links = parse.find_all('a', attrs={'data-testid':'activity_name'})
+        for i in unparsed_links:
+            links.append(str(i).split('href="')[1].split('">')[0])
+            titles.append(i.text)
+        return date[0].text.replace("\n",""), links, titles
 
+    def activity_data_scraper(self, headless, activity_link):
+        if headless == 'on':
+            self.browser = webdriver.Chrome(service=self.browser_service, options=self.browser_options)
+        else:
+            self.browser = webdriver.Chrome(service=self.browser_service)
+        self.browser.get(activity_link)
+        time.sleep(0.8)
+        self.load_cookies(False, False)
+        time.sleep(0.8)
+        source = self.browser.page_source
+        s = soup(source, 'html.parser')
+        unparsed_activity_type = s.find_all('h2', attrs={'class': 'text-title3 text-book marginless'})
+        # Run, Hike etc
+        activity_type = str(unparsed_activity_type).split("</a>")[1].split("</")[0].replace("\n", "").replace("–", "")
+        # Time Splits i.e. - 1. 5:00 km/m
+        activity_splits = s.find_all('table', attrs={'class': 'dense hoverable'})
+        # In cycling, skiing etc... no time splits are present, only segments
+        if not activity_splits:
+            print("No splits activity type '{}'".format(activity_type))
+        # write hmtl
+        else:
+            activity_splits_text = activity_splits
+            with open("table_contents.html", 'w') as contents:
+                contents.write(str(activity_splits_text))
+        unparsed_splits = s.find_all('td')
+        splits = []
+        for i in unparsed_splits:
+            splits.append(i.text.strip())
+
+        return splits
