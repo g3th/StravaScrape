@@ -149,13 +149,8 @@ class UserInterface:
             activity_title = activity_links[activity_choice].split(" | ")[1]
             link = activity_links[activity_choice].split(" | ")[0]
             print("Scraping Metrics for activity '{}'".format(activity_title))
-            splits= self.operations.activity_data_scraper(self.headless_flag, "https://" + link)
+            self.operations.activity_data_scraper(self.headless_flag, "https://" + link, activity_title, dates[date_range_choice])
             print("Metrics saved in file titled: {}".format(activity_title))
-            # save file context manager
-            with open("data/{}/{}".format(dates[date_range_choice], activity_title), 'w') as metrics:
-                for i in splits:
-                    metrics.write(str(i + "\n"))
-            metrics.close()
             input("Press Enter to Return")
         else:
             date = None

@@ -161,14 +161,14 @@ class BrowserOperations:
         parse = soup(raw, 'html.parser')
         links = []
         titles = []
-        date = parse.find_all('h2', attrs={'id':'interval-value'})
-        unparsed_links = parse.find_all('a', attrs={'data-testid':'activity_name'})
+        date = parse.find_all('h2', attrs={'id': 'interval-value'})
+        unparsed_links = parse.find_all('a', attrs={'data-testid': 'activity_name'})
         for i in unparsed_links:
             links.append(str(i).split('href="')[1].split('">')[0])
             titles.append(i.text)
-        return date[0].text.replace("\n",""), links, titles
+        return date[0].text.replace("\n", ""), links, titles
 
-    def activity_data_scraper(self, headless, activity_link):
+    def activity_data_scraper(self, headless, activity_link, activity_title, activity_date):
         if headless == 'on':
             self.browser = webdriver.Chrome(service=self.browser_service, options=self.browser_options)
         else:
@@ -177,24 +177,45 @@ class BrowserOperations:
         time.sleep(0.8)
         self.load_cookies(False, False)
         time.sleep(0.8)
+        time.sleep(7)
         source = self.browser.page_source
         s = soup(source, 'html.parser')
-        unparsed_activity_type = s.find_all('h2', attrs={'class': 'text-title3 text-book marginless'})
+        unparsed_activity_type = s.find('span', {'class': 'title'})
         # Run, Hike etc
-        activity_type = str(unparsed_activity_type).split("</a>")[1].split("</")[0].replace("\n", "").replace("–", "")
-        # Time Splits i.e. - 1. 5:00 km/m
-        activity_splits = s.find_all('table', attrs={'class': 'dense hoverable'})
-        # In cycling, skiing etc... no time splits are present, only segments
-        if not activity_splits:
-            print("No splits activity type '{}'".format(activity_type))
-        # write hmtl
-        else:
-            activity_splits_text = activity_splits
-            with open("table_contents.html", 'w') as contents:
-                contents.write(str(activity_splits_text))
-        unparsed_splits = s.find_all('td')
-        splits = []
-        for i in unparsed_splits:
-            splits.append(i.text.strip())
-
-        return splits
+        activity_type = str(unparsed_activity_type).replace("\n", "").replace("–", "").split("</a>")[1].split("<")[0]
+        # Time splits i.e. 1 - 6:00 /mile - 5 meters (Split Number - Minutes per mile/km - elevation)
+        splits = s.find_all('td', {'class': 'centered'})
+        # Details: Time, date and Location
+        details_contents_div = s.find('div', {'class': 'details'})
+        activity_time_and_date = details_contents_div.find_next('time').text.strip()
+        activity_location = details_contents_div.find_next('span').text.strip()
+        time_date_and_location = "{} - {}".format(activity_time_and_date, activity_location)
+        counter = 1
+        store_splits = []
+        # Stores Splits when present in an activity.
+        # These are not always present, like in Swimming, hiking etc...
+        # Try block is used to determine whether user has GAP in splits.
+        # This is only present if user is Premium, otherwise sibling will not exist.
+        for i in splits:
+            try:
+                store_splits.append(
+                    "[{}] | {} | {}".format(counter, i.find_next_sibling("td").text.strip(),
+                                            i.find_next_sibling("td").find_next_sibling(
+                                                'td').find_next_sibling('td').text.strip()))
+            except AttributeError:
+                store_splits.append(
+                    "[{}] | {} | {}".format(counter, i.find_next_sibling("td").text.strip(),
+                                            i.find_next_sibling("td").find_next_sibling(
+                                                'td').text.strip()))
+            counter += 1
+        with open("data/{}/{}".format(activity_date, activity_title), 'w') as splits_file:
+            splits_file.write("----------------------------------\n")
+            splits_file.write('Activity Title "{}"\n'.format(activity_title))
+            splits_file.write("----------------------------------\n")
+            splits_file.write("Activity Type - {}\n".format(activity_type))
+            splits_file.write("----------------------------------\n")
+            splits_file.write("{}\n".format(time_date_and_location))
+            splits_file.write("----------------------------------\n")
+            for i in store_splits:
+                splits_file.write(i + "\n")
+        splits_file.close()
