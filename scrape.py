@@ -27,6 +27,16 @@ class BrowserOperations:
         self.login_exists = False
         self.soup = None
 
+    def get_athlete_name(self, athlete_page):
+        self.browser = webdriver.Chrome(service=self.browser_service, options=self.browser_options)
+        print("Fetching Athlete...")
+        self.browser.get(athlete_page)
+        raw_html_for_athlete_name = soup(self.browser.page_source, 'html.parser')
+        athlete_name_element = raw_html_for_athlete_name.find_all('h2', {'data-testid': 'details-name'})
+        with open("login_data/athlete", 'w') as athlete:
+            athlete.write(athlete_name_element[0].text)
+        return athlete_name_element[0].text
+
     def login(self, headless):
         if headless == 'on':
             self.browser = webdriver.Chrome(service=self.browser_service, options=self.browser_options)
@@ -105,7 +115,7 @@ class BrowserOperations:
         time.sleep(0.4)
         # Unparsed HTML
         if parse_page_source:
-            self.page_source('ul', {'class': 'options'}, "page_html")
+            self.page_source('ul', {'class': 'options'}, "data/page_html")
         time.sleep(0.8)
 
     def strava_login(self, user, passw, headless):
@@ -156,7 +166,7 @@ class BrowserOperations:
         self.browser.get(page)
         time.sleep(0.8)
         self.load_cookies(False, False)
-        time.sleep(0.8)
+        time.sleep(3)
         raw = self.browser.page_source
         parse = soup(raw, 'html.parser')
         links = []
@@ -168,7 +178,7 @@ class BrowserOperations:
             titles.append(i.text)
         return date[0].text.replace("\n", ""), links, titles
 
-    def activity_data_scraper(self, headless, activity_link, activity_title, activity_date):
+    def activity_data_scraper(self, headless, activity_link, activity_title_, activity_date):
         if headless == 'on':
             self.browser = webdriver.Chrome(service=self.browser_service, options=self.browser_options)
         else:
@@ -189,6 +199,10 @@ class BrowserOperations:
         details_contents_div = s.find('div', {'class': 'details'})
         activity_time_and_date = details_contents_div.find_next('time').text.strip()
         activity_location = details_contents_div.find_next('span').text.strip()
+        inline_stats = s.find('ul', {'class': 'inline-stats section'})
+        total_distance = inline_stats.find_next('li').find_next('strong').text
+        moving_time = inline_stats.find_next('li').find_next('strong').find_next('strong').text
+        pace = inline_stats.find_next('li').find_next('strong').find_next('strong').find_next('strong').text
         time_date_and_location = "{} - {}".format(activity_time_and_date, activity_location)
         counter = 1
         store_splits = []
@@ -208,7 +222,8 @@ class BrowserOperations:
                                             i.find_next_sibling("td").find_next_sibling(
                                                 'td').text.strip()))
             counter += 1
-        with open("data/{}/{}".format(activity_date, activity_title), 'w') as splits_file:
+        activity_title = activity_title_.replace("/","-")
+        with open("data/{}/'{}'".format(activity_date, activity_title), 'w') as splits_file:
             splits_file.write("----------------------------------\n")
             splits_file.write('Activity Title "{}"\n'.format(activity_title))
             splits_file.write("----------------------------------\n")
@@ -216,6 +231,9 @@ class BrowserOperations:
             splits_file.write("----------------------------------\n")
             splits_file.write("{}\n".format(time_date_and_location))
             splits_file.write("----------------------------------\n")
+            splits_file.write(
+                "Total Distance: {} | Moving Time: {} | Pace: {}".format(total_distance, moving_time, pace))
+            splits_file.write("\n----------------------------------\n")
             for i in store_splits:
                 splits_file.write(i + "\n")
         splits_file.close()

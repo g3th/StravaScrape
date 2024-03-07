@@ -5,6 +5,7 @@ import os
 
 class UserInterface:
     def __init__(self):
+        self.athlete_name = None
         self.colors = ['166', '202']
         self.activities_are_present = False
         self.menu_options = ['1', '2', '3', '4', '5', '6']
@@ -40,7 +41,8 @@ class UserInterface:
     def checks(self):
         for i in os.listdir("login_data"):
             if i == "athlete_page":
-                self.athlete_page = "Athlete Page Stored"
+                self.athlete_name = open("login_data/athlete").readline()
+                self.athlete_page = "Athlete Page Stored [Athlete is {}]".format(self.athlete_name)
             if i == "cookies.json":
                 self.logged_in = "Credentials Stored"
 
@@ -54,7 +56,7 @@ class UserInterface:
             print("[{}] {}".format(self.menu_options[0], self.logged_in))
             print("[{}] Use Headless mode [{}]".format(self.menu_options[1], self.headless_flag))
             print("[{}] Get Activity Links".format(self.menu_options[2]))
-            print("[{}] {}".format(self.menu_options[3], self.athlete_page))
+            print("[{}] {} ".format(self.menu_options[3], self.athlete_page))
             print("[{}] Enter Activity Sub Menu".format(self.menu_options[4], self.athlete_page))
             print("[{}] Quit".format(self.menu_options[5]))
             self.opt = input("\nPick an Option: ")
@@ -69,7 +71,7 @@ class UserInterface:
                 case "2":
                     self.option_two()
                 case "3":
-                    if self.athlete_page != "Athlete Page Stored":
+                    if not self.athlete_name:
                         print("There is no athlete page stored.")
                         print("Press Enter")
                         input()
@@ -84,7 +86,7 @@ class UserInterface:
                         else:
                             self.option_three()
                 case "4":
-                    if self.athlete_page == "Athlete Page Stored":
+                    if self.athlete_page == "Athlete Page Stored [Athlete is {}]".format(self.athlete_name):
                         print("Athlete page is already stored")
                         print("Press Enter")
                         input()
@@ -124,13 +126,14 @@ class UserInterface:
         chosen_activity_year = open("data/activities_{}".format(chosen_year)).readlines()
         counter = 1
         files = [file for file in os.listdir("data") if os.path.isdir("data/" + file) and "Activities" in file]
-        print("Found Activities for the following date ranges (not in order):\n")
+        print("Found Activities for the following date ranges:\n")
         dates = []
         activity_links = []
         if files:
             for i in files:
                 print("[{}] {}".format(counter, i))
                 dates.append(i)
+                counter += 1
             opt = int(input("\nPick a date range: "))
             date_range_choice = opt - 1
             with open("data/{}/week_activities_links".format(dates[date_range_choice])) as a_links:
@@ -164,13 +167,16 @@ class UserInterface:
                 for j in range(len(links)):
                     week_links.append(links[j - 1])
                     activity_titles.append(titles[j - 1])
-                    counter += 1
-            with open("data/{}/week_activities_links".format(date), 'w') as w_links:
-                for i in range(len(week_links)):
-                    # Split by Pipe.
-                    # One case could be that user starts activity with "|", and 'split' returns wrong date (above).
-                    # This is improbable, but still possible.
-                    w_links.write("www.strava.com{} | {}\n".format(week_links[i], activity_titles[i]))
+                with open("data/{}/week_activities_links".format(date), 'w') as w_links:
+                    for i in range(len(week_links)):
+                        # Split by Pipe.
+                        # One case could be that user starts activity with "|", and 'split' returns wrong date (above).
+                        # This is improbable, but still possible.
+                        w_links.write("www.strava.com{} | {}\n".format(week_links[i], activity_titles[i]))
+                week_links = []
+                activity_titles = []
+                counter += 1
+
             print("\n\nData was stored.")
             input("Press Enter")
 
@@ -212,10 +218,11 @@ class UserInterface:
     def option_four(self):
         self.title()
         user_page = input("Enter your athlete url: ")
+        athlete_name = self.operations.get_athlete_name(user_page)
         with open("login_data/athlete_page", 'w') as page:
             page.write(user_page)
         page.close()
-        self.athlete_page = "Athlete Page Stored"
+        self.athlete_page = "Athlete Page Stored [Athlete is {}]".format(athlete_name)
 
     def activity_data_menu(self):
         print("1) Heart Rate")
