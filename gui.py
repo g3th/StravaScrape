@@ -1,14 +1,16 @@
 import subprocess
-from scrape import BrowserOperations
 import os
+from photo_downloader import ImageDownloader
+from scrape import BrowserOperations
 
 
 class UserInterface:
     def __init__(self):
+        self.downloader = ImageDownloader()
         self.athlete_name = None
         self.colors = ['166', '202']
         self.activities_are_present = False
-        self.menu_options = ['1', '2', '3', '4', '5', '6']
+        self.menu_options = ['1', '2', '3', '4', '5', '6', '7']
         self.operations = BrowserOperations()
         self.headless_flag = 'on'
         self.logged_in = 'Store Credentials'
@@ -50,15 +52,13 @@ class UserInterface:
         self.checks()
         while True:
             self.title()
-            if [item for item in os.listdir("data") if ("activities" in item)]:
-                self.activities_are_present = True
-                self.menu_options = ['1', '2', '3', '4', '5', '6']
             print("[{}] {}".format(self.menu_options[0], self.logged_in))
             print("[{}] Use Headless mode [{}]".format(self.menu_options[1], self.headless_flag))
             print("[{}] Get Activity Links".format(self.menu_options[2]))
             print("[{}] {} ".format(self.menu_options[3], self.athlete_page))
-            print("[{}] Enter Activity Sub Menu".format(self.menu_options[4], self.athlete_page))
-            print("[{}] Quit".format(self.menu_options[5]))
+            print("[{}] Get Athlete Photos".format(self.menu_options[4]))
+            print("[{}] Enter Activity Sub Menu".format(self.menu_options[5], self.athlete_page))
+            print("[{}] Quit".format(self.menu_options[6]))
             self.opt = input("\nPick an Option: ")
             match self.opt:
                 case "1":
@@ -93,12 +93,22 @@ class UserInterface:
                     else:
                         self.option_four()
                 case "5":
+                    if not self.athlete_name:
+                        print("There is no athlete page stored.")
+                        print("Press Enter")
+                        input()
+                    else:
+                        page = open('login_data/athlete_page').readline()
+                        print("Fetching Image Links...")
+                        links = self.operations.photo_scraper(page)
+                        self.downloader.threaded_downloader(links)
+                case "6":
                     if [file for file in os.listdir("data") if ("activities" in file)]:
                         self.sub_menu()
                     else:
                         print("Scrape some activities first.")
                         input("Press Enter.")
-                case "6":
+                case "7":
                     print("Goodbye")
                     exit()
                 case _:
@@ -223,6 +233,3 @@ class UserInterface:
             page.write(user_page)
         page.close()
         self.athlete_page = "Athlete Page Stored [Athlete is {}]".format(athlete_name)
-
-    def activity_data_menu(self):
-        print("1) Heart Rate")

@@ -193,7 +193,7 @@ class BrowserOperations:
         unparsed_activity_type = s.find('span', {'class': 'title'})
         # Run, Hike etc
         activity_type = str(unparsed_activity_type).replace("\n", "").replace("–", "").split("</a>")[1].split("<")[0]
-        # Time splits i.e. 1 - 6:00 /mile - 5 meters (Split Number - Minutes per mile/km - elevation)
+        # Time splits i.e. 1 - 6:00 /mile - 5 meters (Split Number - Minutes per mile/km - GAP - elevation)
         splits = s.find_all('td', {'class': 'centered'})
         # Details: Time, date and Location
         details_contents_div = s.find('div', {'class': 'details'})
@@ -237,3 +237,22 @@ class BrowserOperations:
             for i in store_splits:
                 splits_file.write(i + "\n")
         splits_file.close()
+
+    def photo_scraper(self, page):
+        self.browser = webdriver.Chrome(service=self.browser_service, options = self.browser_options)
+        self.browser.get(page)
+        time.sleep(0.8)
+        self.load_cookies(False, False)
+        time.sleep(3)
+        source = self.browser.page_source
+        s = soup(source, 'html.parser')
+        find = s.find('div', {'data-react-class':'MediaThumbnailList'})
+        a = str(find).replace('&quot;','"').replace("\\u0026","&").split('"large":')
+        links = []
+        for i in range(len(a)):
+            if i % 2 == 0 or i == [0]:
+                pass
+            else:
+                links.append(a[i].split(',')[0].split("{")[0].replace('"',''))
+        self.browser.close()
+        return links
