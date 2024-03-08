@@ -86,22 +86,27 @@ class UserInterface:
                         else:
                             self.option_three()
                 case "4":
-                    if self.athlete_page == "Athlete Page Stored [Athlete is {}]".format(self.athlete_name):
-                        print("Athlete page is already stored")
+                    try:
+                        page = open('login_data/athlete_page').readline()
+                        print("Athlete page is already stored (Athlete is {}".format(page))
                         print("Press Enter")
                         input()
-                    else:
+                    except FileNotFoundError:
                         self.option_four()
                 case "5":
-                    if not self.athlete_name:
-                        print("There is no athlete page stored.")
-                        print("Press Enter")
-                        input()
-                    else:
+                    try:
                         page = open('login_data/athlete_page').readline()
                         print("Fetching Image Links...")
                         links = self.operations.photo_scraper(page)
-                        self.downloader.threaded_downloader(links)
+                        if len(links) == 0:
+                            print("Athlete has no photos")
+                            input("Press Enter to Return.")
+                        else:
+                            self.downloader.threaded_downloader(links)
+                    except FileNotFoundError:
+                        print("There is no athlete page stored.")
+                        print("Press Enter")
+                        input()
                 case "6":
                     if [file for file in os.listdir("data") if ("activities" in file)]:
                         self.sub_menu()
@@ -125,13 +130,14 @@ class UserInterface:
                 pass
             else:
                 activities.append(i)
+        activities = sorted(activities)
         print("\n{} Year/s of activity/activities in total:\n".format(len(activities)))
         for i in activities:
             total_activity_links = open("data/{}".format(i)).readlines()
             print("[{}] Year {} Has {} Activity/Activities".format(counter, counter, len(total_activity_links)))
             counter += 1
         user_option = int(input("\nPick an Option: "))
-        chosen_year = user_option - 1
+        chosen_year = user_option
         self.title()
         chosen_activity_year = open("data/activities_{}".format(chosen_year)).readlines()
         counter = 1

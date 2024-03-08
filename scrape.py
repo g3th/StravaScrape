@@ -124,7 +124,7 @@ class BrowserOperations:
         self.login(headless)
 
     def check_elements(self, headless):
-        page_counter = 0
+        page_counter = 1
         self.athlete_page = open("login_data/athlete_page", 'r').readlines()[0]
         while True:
             if [item for item in os.listdir("data") if ("page_html" in item)]:
